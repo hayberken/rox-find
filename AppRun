@@ -28,16 +28,24 @@ class FindWindow(rox.Window):
 		rox.Window.__init__(self)
 		self.set_title(APP_NAME)
 		self.set_default_size(550, 500)
-
+		
+		self.cancel = False
+		self.find = False
+		self.selected = False
+		
 		self.toolbar = gtk.Toolbar()
 		self.toolbar.set_style(gtk.TOOLBAR_ICONS)
 		self.toolbar.insert_stock(gtk.STOCK_CLOSE, _('Close'), None, self.close, None, -1)
-		self.toolbar.insert_stock(gtk.STOCK_GO_UP, _('Show file'), None, self.show_dir, None, -1)
-		self.toolbar.insert_stock(gtk.STOCK_EXECUTE, _('Find'), None, self.find_what_where, None, -1)
-		self.toolbar.insert_stock(gtk.STOCK_CLEAR, _('Clear'), None, self.clear, None, -1)
-		self.toolbar.insert_stock(gtk.STOCK_STOP, _('Cancel'), None, self.cancel_find, None, -1)
+		self.show_btn = self.toolbar.insert_stock(gtk.STOCK_GO_UP, _('Show file'), None, self.show_dir, None, -1)
+		self.find_btn = self.toolbar.insert_stock(gtk.STOCK_EXECUTE, _('Find'), None, self.find_what_where, '<Enter>', -1)
+		self.clear_btn = self.toolbar.insert_stock(gtk.STOCK_CLEAR, _('Clear'), None, self.clear, None, -1)
+		self.cancel_btn = self.toolbar.insert_stock(gtk.STOCK_STOP, _('Cancel'), None, self.cancel_find, None, -1)
 		self.toolbar.insert_stock(gtk.STOCK_PREFERENCES, _('Settings'), None, self.edit_options, None, -1)
 
+		self.show_btn.set_sensitive(False)
+		self.find_btn.set_sensitive(False)
+		self.clear_btn.set_sensitive(False)
+		self.cancel_btn.set_sensitive(False)
 
 		# Create layout, pack and show widgets
 		self.table = gtk.Table(5, 2, False)
@@ -91,6 +99,8 @@ class FindWindow(rox.Window):
 		column.set_reorderable(True)
 
 		view.connect('row-activated', self.activate)
+		self.selection = view.get_selection()
+		self.selection.connect('changed', self.set_selection)
 
 		self.vbox = gtk.VBox()
 		self.add(self.vbox)
@@ -101,9 +111,15 @@ class FindWindow(rox.Window):
 
 		self.browse.connect('clicked', self.browser)
 
+		self.what.connect('changed', self.set_sensitives)
+		self.where.connect('changed', self.set_sensitives)
+		self.path.connect('changed', self.set_sensitives)
+
 
 	def find_what_where(self, *args):
 		self.cancel = False
+		self.find = True
+		self.set_sensitives()
 		where = self.where.get_text()
 		what = self.what.get_text()
 		path = self.path.get_text()
@@ -114,11 +130,17 @@ class FindWindow(rox.Window):
 		thing = popen2.Popen4(cmd)
 		tasks.Task(self.get_status(thing))
 		
+		
 	def cancel_find(self, *args):
 		self.cancel = True
+		self.set_sensitives()
+		
 		
 	def clear(self, *args):
 		self.store.clear()
+		self.selected = False
+		self.set_sensitives()
+
 
 	def get_status(self, thing):
 		outfile = thing.fromchild
@@ -127,9 +149,11 @@ class FindWindow(rox.Window):
 			yield blocker
 			if self.cancel:
 				os.kill(thing.pid, signal.SIGKILL)
+				self.cancel = False
 				return
 			line = outfile.readline()
 			if line:
+				self.set_sensitives()
 				iter = self.store.append(None)
 				try:
 					(filename, lineno, text) = line.split(':')
@@ -141,8 +165,24 @@ class FindWindow(rox.Window):
 				if code:
 					rox.info(_('There was a problem with this search'))
 				break
+		self.find = False
+		self.set_sensitives()
 				
 				
+	def set_sensitives(self, *args):
+		path = self.path.get_text()
+		what = self.what.get_text()
+		where = self.where.get_text()
+		
+		if len(what) and len(where) and len(path) and not self.find:
+			self.find_btn.set_sensitive(True)
+		else:
+			self.find_btn.set_sensitive(False)
+			
+		self.clear_btn.set_sensitive(bool(len(self.store)))
+		self.cancel_btn.set_sensitive(self.find)
+		self.show_btn.set_sensitive(self.selected)
+					
 
 	def browser(self, *args):
 		browser = gtk.FileChooserDialog(title=_('Select folder'), buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OPEN, gtk.RESPONSE_ACCEPT))
@@ -158,11 +198,14 @@ class FindWindow(rox.Window):
 			except:
 				rox.report_exception()
 		browser.hide()
-
+		
+		
+	def set_selection(self, *args):
+		self.selected = True
+		self.set_sensitives()
+		
 
 	def activate(self, view, path, column):
-		''' '''
-
 		def get_type_handler(dir, mime_type):
 			"""Lookup the ROX-defined run action for a given mime type."""
 			path = basedir.load_first_config('MIME-types')
@@ -175,8 +218,7 @@ class FindWindow(rox.Window):
 					return handler
 				else:
 					return None
-		
-	
+			
 		model, iter = self.view.get_selection().get_selected()
 		if iter:
 			filename = model.get_value(iter, 0)
