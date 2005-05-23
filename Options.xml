@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<options>
+	<section title="Settings">
+		<frame label='Find command'>
+			<label>Your preferred find command settings.</label>
+			<label>(use $Path, $Files and $Text to represent the search path, the files to examine and the text to search for.)</label>
+			<entry name='find_cmd'/>
+		</frame>
+		<frame label='Edit command'>
+			<label>Your preferred text editor</label>
+			<label>(use $File and $Line to represent filename and line number)</label>
+			<entry name='edit_cmd'/>
+		</frame>
+	</section>
+</options>
