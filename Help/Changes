@@ -1,0 +1,20 @@
+Find (in Files) -- a ROX Utility
+
+Changelog:
+-----------------
+Version 003 (26-05-2005)
+	* Big rewrite, more or less
+	* Use gtk.ComboBoxEntry where available instead of gtk.Entry
+	* New class EntryThing (nice name) to wrap the above and add history support
+	* Each entry box has history of up to 10 items
+	* Fixed bugs: 
+		- failed to parse text containing ':' properly
+		- button sensitivity handling was not quite right
+		- probably more that I don't remember :)
+
+Version 002 (23-05-2005)
+	* Set appropriate toolbar button sensitivity
+	* Protect ellipsize and FileChooserDialog code from older (py)gtk versions.
+	* Add drop target support - drag folder to icon to launch and search from that path
+		(Suggested by Musus Umbra)
+

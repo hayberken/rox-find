@@ -1,0 +1,13 @@
+TODO List
+------------
+* Ignore binary files option
+* Ignore case option
+* <Enter> key executes Find (when results not selected, otherwise open selected file)
+* Multiple filespec support (e.g. *.py, *.cpp)
+* Don't Recurse Subdirs option
+* Pass pattern on command line
+
+
+Done List
+------------
+History support !
