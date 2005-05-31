@@ -2,6 +2,14 @@ Find (in Files) -- a ROX Utility
 
 Changelog:
 -----------------
+Version 005 aka 'Lucky Number Five' aka 'Did I fix all the little bugs yet?' (30-05-2005)
+	* Bug fixes
+		- Icons not becoming sensitive when text boxes filled in
+		- self.store.append(None) should be self.store.append()
+		- referenced self.path_entry before it was created
+	* Added 'Match whole words' option
+	* Failed to forget to bump the version number in AppInfo.xml
+
 Version 004 (29-05-2005)
 	* Ignore binary files option
 	* Match case option

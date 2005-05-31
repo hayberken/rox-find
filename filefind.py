@@ -42,11 +42,15 @@ OPT_FIND_CMD = Option('find_cmd', 'find "$P" $R -name "$F" -exec grep -Hn $C $B 
 OPT_EDIT_CMD = Option('edit_cmd', None)
 
 OPT_MATCH_CASE = Option('match_case', True)
+OPT_MATCH_WORDS = Option('match_words', False)
 OPT_RECURSE_DIRS = Option('recurse_dirs', True)
 OPT_IGNORE_BIN = Option('ignore_binary', True)
 
 OPT_MATCH_CASE_ON = Option('match_case_on', '')
 OPT_MATCH_CASE_OFF = Option('match_case_off', '-i')
+
+OPT_MATCH_WORDS_ON = Option('match_words_on', '-w')
+OPT_MATCH_WORDS_OFF = Option('match_words_off', '')
 
 OPT_RECURSE_DIRS_ON = Option('recurse_dirs_on', '')
 OPT_RECURSE_DIRS_OFF = Option('recurse_dirs_off', '-maxdepth 1')
@@ -96,7 +100,7 @@ class EntryThing(_entryClass):
   			
   	def get_text(self):
   		if use_combo_box:
-  			return self.get_active_text()
+  			return self.child.get_text()
   		else:
   			return _entryClass.get_text(self)
   	
@@ -222,20 +226,25 @@ class FindWindow(rox.Window):
 		table.attach(gtk.Label(_('Files')),	0, 1, 4, 5, 0, 0, 4, y_pad)
 		table.attach(where, 1, 2, 4, 5, gtk.EXPAND|gtk.FILL, 0, x_pad, y_pad)
 		
-		hbox = gtk.HBox()
-		hbox.set_spacing(5)
-		
-		self.ignore_binary = gtk.CheckButton(label=_('Ignore binary files'))
-		self.ignore_binary.set_active(bool(OPT_IGNORE_BIN.int_value))
-		hbox.pack_end(self.ignore_binary, False, False)
+		hbox1 = gtk.HBox()
 		
 		self.match_case = gtk.CheckButton(label=_('Match case'))
 		self.match_case.set_active(bool(OPT_MATCH_CASE.int_value))
-		hbox.pack_end(self.match_case,False, False)
+		hbox1.pack_start(self.match_case,False, False, 5)
+		
+		self.match_words = gtk.CheckButton(label=_('Match whole words'))
+		self.match_words.set_active(bool(OPT_MATCH_WORDS.int_value))
+		hbox1.pack_start(self.match_words,False, False, 5)
+		
+		self.ignore_binary = gtk.CheckButton(label=_('Ignore binary files'))
+		self.ignore_binary.set_active(bool(OPT_IGNORE_BIN.int_value))
+		hbox1.pack_start(self.ignore_binary, False, False, 5)
+		
+		hbox2 = gtk.HBox()
 		
 		self.recurse_dirs = gtk.CheckButton(label=_('Search subdirectories'))
 		self.recurse_dirs.set_active(bool(OPT_RECURSE_DIRS.int_value))
-		hbox.pack_end(self.recurse_dirs,False, False)
+		hbox2.pack_start(self.recurse_dirs,False, False, 5)
 
 		swin = gtk.ScrolledWindow()
 		swin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
@@ -274,10 +283,12 @@ class FindWindow(rox.Window):
 		self.selection.connect('changed', self.set_selection)
 
 		vbox = gtk.VBox()
+		vbox.set_spacing(5)
 		self.add(vbox)
 		vbox.pack_start(toolbar, False, False)
 		vbox.pack_start(table, False, False)
-		vbox.pack_start(hbox, False, False)
+		vbox.pack_start(hbox1, False, False)
+		vbox.pack_start(hbox2, False, False)
 		vbox.pack_start(swin, True, True)
 		vbox.show_all()
 
@@ -287,13 +298,14 @@ class FindWindow(rox.Window):
 		
 		self.connect('key-press-event', self.key_press)
 
+		self.path_entry = path
+		self.what_entry = what
+		self.where_entry = where
+		
 		if in_path:
 			path.set_text(in_path)
 			
 		self.connect('delete_event', self.delete_event)
-		self.path_entry = path
-		self.what_entry = what
-		self.where_entry = where
 
 
 	def start_find(self, *args):
@@ -316,20 +328,21 @@ class FindWindow(rox.Window):
 		cmd = string.replace(cmd, '$F', self.where)
 		cmd = string.replace(cmd, '$T', self.what)
 		
-		if self.match_case.get_active():
-			cmd = string.replace(cmd, '$C', OPT_MATCH_CASE_ON.value)
-		else:
-			cmd = string.replace(cmd, '$C', OPT_MATCH_CASE_OFF.value)
-			
-		if self.ignore_binary.get_active():
-			cmd = string.replace(cmd, '$B', OPT_IGNORE_BIN_ON.value)
-		else:
-			cmd = string.replace(cmd, '$B', OPT_IGNORE_BIN_OFF.value)
-			
-		if self.recurse_dirs.get_active():
-			cmd = string.replace(cmd, '$R', OPT_RECURSE_DIRS_ON.value)
-		else:
-			cmd = string.replace(cmd, '$R', OPT_RECURSE_DIRS_OFF.value)
+		cmd = string.replace(cmd, '$C', [OPT_MATCH_CASE_OFF.value,
+					 OPT_MATCH_CASE_ON.value]
+					[self.match_case.get_active()])
+										
+		cmd = string.replace(cmd, '$W', [OPT_MATCH_WORDS_OFF.value, 
+					 OPT_MATCH_WORDS_ON.value]
+					[self.match_words.get_active()])
+										
+		cmd = string.replace(cmd, '$B', [OPT_IGNORE_BIN_OFF.value, 
+					 OPT_IGNORE_BIN_ON.value]
+					[self.ignore_binary.get_active()])
+										
+		cmd = string.replace(cmd, '$R', [OPT_RECURSE_DIRS_OFF.value, 
+										 OPT_RECURSE_DIRS_ON.value]
+										[self.recurse_dirs.get_active()])
 		
 		thing = popen2.Popen4(cmd)
 		tasks.Task(self.get_status(thing))
@@ -360,7 +373,7 @@ class FindWindow(rox.Window):
 			line = outfile.readline()
 			if line:
 				self.set_sensitives()
-				iter = self.store.append(None)
+				iter = self.store.append()
 				try:
 					(filename, lineno, text) = string.split(line, ':', 2)
 					self.store.set(iter, 0, filename, 1, int(lineno), 2, text[:-1])

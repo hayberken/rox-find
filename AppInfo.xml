@@ -11,7 +11,7 @@
 	<About xml:lang="en">
 		<Purpose>Find text in files and open in text editor.</Purpose>
 		<Author>Ken Hayber</Author>
-		<Version>003 (26-05-2005)</Version>
+		<Version>005 (30-05-2005)</Version>
 		<License>GNU General Public License</License>
 		<Homepage>http://www.hayber.us/wiki/index.php/ROX/Find</Homepage>
 	</About>

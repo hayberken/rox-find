@@ -10,15 +10,20 @@
 				<entry name='match_case_on' label='On'/>
 				<entry name='match_case_off' label='Off'/>
 			</hbox>
+			<toggle name='match_words' label='Match whole words ($W)'/>
+			<hbox>
+				<entry name='match_words_on' label='On'/>
+				<entry name='match_words_off' label='Off'/>
+			</hbox>
 			<toggle name='recurse_dirs' label='Recurse subdirectories ($R)'/>
 			<hbox>
-			<entry name='recurse_dirs_on' label='On'/>
-			<entry name='recurse_dirs_off' label='Off'/>
+				<entry name='recurse_dirs_on' label='On'/>
+				<entry name='recurse_dirs_off' label='Off'/>
 			</hbox>
 			<toggle name='ignore_binary' label='Ignore binary files ($B)'/>
 			<hbox>
-			<entry name='ignore_binary_on' label='On'/>
-			<entry name='ignore_binary_off' label='Off'/>
+				<entry name='ignore_binary_on' label='On'/>
+				<entry name='ignore_binary_off' label='Off'/>
 			</hbox>
 		</frame>
 		<frame label='Edit command'>
