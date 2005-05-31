@@ -2,6 +2,13 @@ Find (in Files) -- a ROX Utility
 
 Changelog:
 -----------------
+Version 004 (29-05-2005)
+	* Ignore binary files option
+	* Match case option
+	* Recurse Subdirs option
+	* More (final?) gtk < 2.4 fixes
+	* <Enter> key executes Find.
+
 Version 003 (26-05-2005)
 	* Big rewrite, more or less
 	* Use gtk.ComboBoxEntry where available instead of gtk.Entry

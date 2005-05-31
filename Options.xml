@@ -3,8 +3,23 @@
 	<section title="Settings">
 		<frame label='Find command'>
 			<label>Your preferred find command settings.</label>
-			<label>(use $Path, $Files and $Text to represent the search path, the files to examine and the text to search for.)</label>
+			<label>Use $P, $F and $T to represent the search Path, the Files to examine and the search Text.  Additional options are defined below.</label>
 			<entry name='find_cmd'/>
+			<toggle name='match_case' label='Match case ($C)'/>
+			<hbox>
+				<entry name='match_case_on' label='On'/>
+				<entry name='match_case_off' label='Off'/>
+			</hbox>
+			<toggle name='recurse_dirs' label='Recurse subdirectories ($R)'/>
+			<hbox>
+			<entry name='recurse_dirs_on' label='On'/>
+			<entry name='recurse_dirs_off' label='Off'/>
+			</hbox>
+			<toggle name='ignore_binary' label='Ignore binary files ($B)'/>
+			<hbox>
+			<entry name='ignore_binary_on' label='On'/>
+			<entry name='ignore_binary_off' label='Off'/>
+			</hbox>
 		</frame>
 		<frame label='Edit command'>
 			<label>Your preferred text editor</label>

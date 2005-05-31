@@ -38,22 +38,38 @@ from rox.options import Option
 rox.setup_app_options(APP_NAME, site=APP_SITE)
 Menu.set_save_name(APP_NAME, site=APP_SITE)
 
-OPT_FIND_CMD = Option('find_cmd', 'find "$Path" -name "$Files" -exec grep -Hn "$Text" "{}" \;')
+OPT_FIND_CMD = Option('find_cmd', 'find "$P" $R -name "$F" -exec grep -Hn $C $B "$T" "{}" \;')
 OPT_EDIT_CMD = Option('edit_cmd', None)
+
+OPT_MATCH_CASE = Option('match_case', True)
+OPT_RECURSE_DIRS = Option('recurse_dirs', True)
+OPT_IGNORE_BIN = Option('ignore_binary', True)
+
+OPT_MATCH_CASE_ON = Option('match_case_on', '')
+OPT_MATCH_CASE_OFF = Option('match_case_off', '-i')
+
+OPT_RECURSE_DIRS_ON = Option('recurse_dirs_on', '')
+OPT_RECURSE_DIRS_OFF = Option('recurse_dirs_off', '-maxdepth 1')
+
+OPT_IGNORE_BIN_ON = Option('ignore_binary_on', '-I')
+OPT_IGNORE_BIN_OFF = Option('ignore_binary_off', '')
+
 
 rox.app_options.notify()
 
+#if you don't like the ComboBox, but want history support
+#you can hardcode this to False (requires gtk 2.4+)
+use_combo_box = hasattr(gtk, 'ComboBox')
 
-use_combo_box = False #hasattr(gtk, 'ComboBox')
 if use_combo_box:
 	_entryClass = gtk.ComboBoxEntry
 else:
 	_entryClass = gtk.Entry
 
 class EntryThing(_entryClass):
-	'''this class does two things.
+	'''This class does two things.
 		1) it wraps gtk.Entry | gtk.ComboBoxEntry for backwards compatibility
-		2) it adds history support
+		2) it adds history support via the ComboBox or EntryCompletion
 	''' 
 	def __init__(self, history=None):
 		self.history = history
@@ -73,6 +89,9 @@ class EntryThing(_entryClass):
 		self.load()
 		
 	def __del__(self):
+		'''This is supposed to write the history out upon exit,
+		   but it never gets called!!!
+		'''
 		self.write()
   			
   	def get_text(self):
@@ -91,23 +110,34 @@ class EntryThing(_entryClass):
   			_entryClass.set_text(self, text)
    	
    	def find_text(self, text):
-		item = self.liststore.get_iter_first()
-		index = 0
-		while item:
-			old_item = self.liststore.get_value(item, 0)
-			if old_item == text:
-				return index 
-			item = self.liststore.iter_next(item)
-			index += 1
-		return None
-   		
+   		'''Check history to see if text already exists, return index or None'''
+   		if not text: return
+   		try:
+			item = self.liststore.get_iter_first()
+			index = 0
+			while item:
+				old_item = self.liststore.get_value(item, 0)
+				if old_item == text:
+					return index 
+				item = self.liststore.iter_next(item)
+				index += 1
+			return None
+		except:
+			return None
+	   		
   	def append_text(self, text):
-  		if self.find_text(text) == None:
+  		'''Add item to history (if not duplicate)'''
+  		if not text: return
+  		if self.find_text(text) != None: return
+  		try:
 			if len(self.liststore) >= MAX_HISTORY:
 				self.liststore.remove(self.liststore.get_iter_first())
 			self.liststore.append([text])
+		except:
+			pass
   					
   	def write(self):
+  		'''Write history to file in config directory'''
 		if not self.history:
 			return
 
@@ -122,6 +152,7 @@ class EntryThing(_entryClass):
 			pass
   		
   	def load(self):
+  		'''Read history from file and add to liststore'''
 		if not self.history:
 			return
 
@@ -130,7 +161,7 @@ class EntryThing(_entryClass):
 			history_file = file(os.path.join(save_dir, self.history), 'r')
 			lines = history_file.readlines()
 			for x in lines:
-				self.liststore.append([x[:-1]])
+				self.liststore.append([x[:-1]]) #remove trailing newline
 			history_file.close()
 		except:
 			pass  
@@ -138,6 +169,12 @@ class EntryThing(_entryClass):
 
 
 class FindWindow(rox.Window):
+	'''A Find in Files Utility:
+	   Calls external search (e.g. find | grep) tool and parses output.
+	   Found files and the matching text are displayed in a list.
+	   Activating items in the list opens a Text Editor, optionally jumping to 
+	   the specific line of text.
+	'''
 	def __init__(self, in_path = None):
 		rox.Window.__init__(self)
 		self.set_title(APP_NAME)
@@ -184,8 +221,22 @@ class FindWindow(rox.Window):
 		where = EntryThing('files')
 		table.attach(gtk.Label(_('Files')),	0, 1, 4, 5, 0, 0, 4, y_pad)
 		table.attach(where, 1, 2, 4, 5, gtk.EXPAND|gtk.FILL, 0, x_pad, y_pad)
+		
+		hbox = gtk.HBox()
+		hbox.set_spacing(5)
+		
+		self.ignore_binary = gtk.CheckButton(label=_('Ignore binary files'))
+		self.ignore_binary.set_active(bool(OPT_IGNORE_BIN.int_value))
+		hbox.pack_end(self.ignore_binary, False, False)
+		
+		self.match_case = gtk.CheckButton(label=_('Match case'))
+		self.match_case.set_active(bool(OPT_MATCH_CASE.int_value))
+		hbox.pack_end(self.match_case,False, False)
+		
+		self.recurse_dirs = gtk.CheckButton(label=_('Search subdirectories'))
+		self.recurse_dirs.set_active(bool(OPT_RECURSE_DIRS.int_value))
+		hbox.pack_end(self.recurse_dirs,False, False)
 
-		#######################################
 		swin = gtk.ScrolledWindow()
 		swin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 		swin.set_shadow_type(gtk.SHADOW_IN)
@@ -226,13 +277,16 @@ class FindWindow(rox.Window):
 		self.add(vbox)
 		vbox.pack_start(toolbar, False, False)
 		vbox.pack_start(table, False, False)
+		vbox.pack_start(hbox, False, False)
 		vbox.pack_start(swin, True, True)
 		vbox.show_all()
 
-		what.connect('changed', self.entry_changed, what, 'what')
-		where.connect('changed', self.entry_changed, where, 'where')
-		path.connect('changed', self.entry_changed, path, 'path')
+		what.connect('changed', self.entry_changed)
+		where.connect('changed', self.entry_changed)
+		path.connect('changed', self.entry_changed)
 		
+		self.connect('key-press-event', self.key_press)
+
 		if in_path:
 			path.set_text(in_path)
 			
@@ -243,6 +297,7 @@ class FindWindow(rox.Window):
 
 
 	def start_find(self, *args):
+		'''Execute the find command after applying optional paramters'''
 		self.cancel = False
 		self.running = True
 		self.set_sensitives()
@@ -252,9 +307,30 @@ class FindWindow(rox.Window):
 		self.where_entry.append_text(self.where)
 				
 		cmd = OPT_FIND_CMD.value
+		#long options (deprecated)
 		cmd = string.replace(cmd, '$Path', self.path)
 		cmd = string.replace(cmd, '$Files', self.where)
 		cmd = string.replace(cmd, '$Text', self.what)
+		#short options
+		cmd = string.replace(cmd, '$P', self.path)
+		cmd = string.replace(cmd, '$F', self.where)
+		cmd = string.replace(cmd, '$T', self.what)
+		
+		if self.match_case.get_active():
+			cmd = string.replace(cmd, '$C', OPT_MATCH_CASE_ON.value)
+		else:
+			cmd = string.replace(cmd, '$C', OPT_MATCH_CASE_OFF.value)
+			
+		if self.ignore_binary.get_active():
+			cmd = string.replace(cmd, '$B', OPT_IGNORE_BIN_ON.value)
+		else:
+			cmd = string.replace(cmd, '$B', OPT_IGNORE_BIN_OFF.value)
+			
+		if self.recurse_dirs.get_active():
+			cmd = string.replace(cmd, '$R', OPT_RECURSE_DIRS_ON.value)
+		else:
+			cmd = string.replace(cmd, '$R', OPT_RECURSE_DIRS_OFF.value)
+		
 		thing = popen2.Popen4(cmd)
 		tasks.Task(self.get_status(thing))
 		
@@ -272,6 +348,7 @@ class FindWindow(rox.Window):
 
 
 	def get_status(self, thing):
+		'''Parse the ouput of the find command and fill the listbox.'''
 		outfile = thing.fromchild
 		while True:
 			blocker = tasks.InputBlocker(outfile)
@@ -301,8 +378,10 @@ class FindWindow(rox.Window):
 			rox.info(_('Your search returned no results'))
 		
 
-	def entry_changed(self, button, widget, item):
-		self.__dict__[item] = widget.get_text()
+	def entry_changed(self, button):
+		self.path = self.path_entry.get_text()
+		self.what = self.what_entry.get_text()
+		self.where = self.where_entry.get_text()
 		self.set_sensitives()
 		
 				
@@ -337,7 +416,17 @@ class FindWindow(rox.Window):
 		self.set_sensitives()
 		
 
-	def activate(self, view, path, column):
+	def key_press(self, text, kev):
+		if kev.keyval == gtk.keysyms.Return or kev.keyval == gtk.keysyms.KP_Enter:
+			if len(self.what) and len(self.where) and len(self.path) and not self.running:
+				self.start_find()
+				return 1
+		return 0
+		
+
+	def activate(self, *args):
+		'''Launch Editor for selected file/text'''
+		
 		def get_type_handler(dir, mime_type):
 			"""Lookup the ROX-defined run action for a given mime type."""
 			path = basedir.load_first_config('MIME-types')
