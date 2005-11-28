@@ -2,12 +2,28 @@ Find (in Files) -- a ROX Utility
 
 Changelog:
 -----------------
-Version 005 aka 'Lucky Number Five' aka 'Did I fix all the little bugs yet?' (30-05-2005)
+Version 007 (27-Nov-2005)
+	* Bugfix for Version 006 - Cancel didn't stop the find until some output was
+	generated. 
+	* Bugfix for Version 006 - Closing Find via the Window Manager's control did
+	not cancel the find or save the history. 
+	* Change from ListView to TreeView and separate multiple searches using
+	expander rows.
+	* Suppress find/grep errors from results list.
+	
+Version 006 (26-Nov-2005)
+	* UI redesign by Thomas Leonard
+	* Pre-pend items to history list rather than append (most recent on top)
+	* Support '~' in Path specification
+	* README is not blank anymore!
+	
+Version 005 aka 'Lucky Number Five' aka 'Did I fix all the little bugs yet?' (31-05-2005)
 	* Bug fixes
 		- Icons not becoming sensitive when text boxes filled in
 		- self.store.append(None) should be self.store.append()
 		- referenced self.path_entry before it was created
 	* Added 'Match whole words' option
+	* Added Command Line Options
 	* Failed to forget to bump the version number in AppInfo.xml
 
 Version 004 (29-05-2005)

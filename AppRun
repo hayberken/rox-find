@@ -7,11 +7,34 @@ __builtins__._ = rox.i18n.translation(os.path.join(rox.app_dir, 'Messages'))
 
 import filefind
 
-if len(sys.argv) > 1:
-	path = sys.argv[1]
+
+from optparse import OptionParser
+
+parser = OptionParser()
+
+parser.add_option("--options", action="store_true", dest="options", 
+				default=False, help=_("display options dialog"))
+
+parser.add_option("-p", "--path", type="string", dest="path", 
+				default=None, help=_("specify search path"))
+
+parser.add_option("-t", "--text", type="string", dest="text", 
+				default=None, help=_("specify search text"))
+
+parser.add_option("-f", "--files", type="string", dest="files", 
+				default=None, help=_("specify files to search in"))
+
+(options, args) = parser.parse_args()
+
+if options.options:
+	rox.edit_options()
 else:
-	path = None
+	if len(sys.argv) > 1:
+		path = sys.argv[1]
+	else:
+		path = options.path
+		
+	win = filefind.FindWindow(path, options.text, options.files)
+	win.show()
 	
-win = filefind.FindWindow(path)
-win.show()
 rox.mainloop()

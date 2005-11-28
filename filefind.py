@@ -80,8 +80,10 @@ class EntryThing(_entryClass):
 		self.liststore = gtk.ListStore(gobject.TYPE_STRING)
 		if use_combo_box:
   			_entryClass.__init__(self, self.liststore, 0)
+			self.entry = self.child
   		else:
   			_entryClass.__init__(self)
+			self.entry = self
 			try: #for gtk < 2.4 compatibility and in case nothing is saved yet
 				completion = gtk.EntryCompletion()
 				self.set_completion(completion)
@@ -105,7 +107,7 @@ class EntryThing(_entryClass):
   			return _entryClass.get_text(self)
   	
   	def set_text(self, text):
-		self.append_text(text)
+		self.add_text(text)
   		if use_combo_box:
   			index = self.find_text(text)
   			if index != None:
@@ -129,14 +131,15 @@ class EntryThing(_entryClass):
 		except:
 			return None
 	   		
-  	def append_text(self, text):
+  	def add_text(self, text):
   		'''Add item to history (if not duplicate)'''
   		if not text: return
   		if self.find_text(text) != None: return
   		try:
-			if len(self.liststore) >= MAX_HISTORY:
-				self.liststore.remove(self.liststore.get_iter_first())
-			self.liststore.append([text])
+			n = len(self.liststore)
+			if n >= MAX_HISTORY:
+				self.liststore.remove(self.liststore.get_iter((n-1,)))
+			self.liststore.insert(0, [text])
 		except:
 			pass
   					
@@ -170,40 +173,61 @@ class EntryThing(_entryClass):
 		except:
 			pass  
 			
+RESPONSE_FIND = 1
+RESPONSE_CLEAR = 2
+RESPONSE_PREFS = 3
 
 
-class FindWindow(rox.Window):
+class FindWindow(rox.Dialog):
 	'''A Find in Files Utility:
 	   Calls external search (e.g. find | grep) tool and parses output.
 	   Found files and the matching text are displayed in a list.
 	   Activating items in the list opens a Text Editor, optionally jumping to 
 	   the specific line of text.
 	'''
-	def __init__(self, in_path = None):
-		rox.Window.__init__(self)
+	find_process = None
+	updating_button_state = False	# Ignore events
+	cancel = False
+	tree_node = None
+
+	def __init__(self, in_path=None, in_text=None, in_files=None):
+		rox.Dialog.__init__(self)
+		self.set_has_separator(False)
 		self.set_title(APP_NAME)
 		self.set_default_size(550, 500)
 		
-		self.cancel = False
-		self.running = False
 		self.selected = False
 		self.path = ''
 		self.what = ''
 		self.where = ''
 		
-		toolbar = gtk.Toolbar()
-		toolbar.set_style(gtk.TOOLBAR_ICONS)
-		toolbar.insert_stock(gtk.STOCK_CLOSE, _('Close'), None, self.close, None, -1)
-		self.show_btn = toolbar.insert_stock(gtk.STOCK_GO_UP, _('Show file'), None, self.show_dir, None, -1)
-		self.find_btn = toolbar.insert_stock(gtk.STOCK_EXECUTE, _('Find'), None, self.start_find, None, -1)
-		self.clear_btn = toolbar.insert_stock(gtk.STOCK_CLEAR, _('Clear'), None, self.clear, None, -1)
-		self.cancel_btn = toolbar.insert_stock(gtk.STOCK_STOP, _('Cancel'), None, self.cancel_find, None, -1)
-		toolbar.insert_stock(gtk.STOCK_PREFERENCES, _('Settings'), None, self.edit_options, None, -1)
+		self.add_button(gtk.STOCK_CLEAR, RESPONSE_CLEAR)
+		self.add_button(gtk.STOCK_CLOSE, gtk.RESPONSE_CANCEL)	# Must be Cancel for Escape to work
+		self.add_button(gtk.STOCK_HELP, gtk.RESPONSE_HELP)
+		self.find_btn = gtk.ToggleButton(gtk.STOCK_FIND)
+		self.find_btn.set_use_stock(True)
+		self.find_btn.set_flags(gtk.CAN_DEFAULT)
+		self.add_action_widget(self.find_btn, RESPONSE_FIND)
 
-		self.show_btn.set_sensitive(False)
-		self.find_btn.set_sensitive(False)
-		self.clear_btn.set_sensitive(False)
-		self.cancel_btn.set_sensitive(False)
+		self.set_default_response(RESPONSE_FIND)
+		def resp(box, action):
+			if self.updating_button_state: return
+
+			if action == gtk.RESPONSE_CANCEL:
+				self.close()
+			elif action == RESPONSE_CLEAR:
+				self.clear()
+			elif action == RESPONSE_FIND:
+				if self.find_process is None:
+					self.start_find()
+				else:
+					self.cancel_find()
+			elif action == gtk.RESPONSE_HELP:
+				filer.open_dir(os.path.join(rox.app_dir, 'Help'))
+		self.connect('response', resp)
+		self.connect('delete_event', self.close)
+
+		self.set_response_sensitive(RESPONSE_CLEAR, False)
 
 		# Create layout, pack and show widgets
 		table = gtk.Table(5, 2, False)
@@ -219,10 +243,13 @@ class FindWindow(rox.Window):
 			table.attach(self.browse, 2, 3, 2, 3, 0, 0, x_pad, y_pad)
 
 		what = EntryThing('pattern')
+		path.entry.connect('activate', lambda p: what.grab_focus())
 		table.attach(gtk.Label(_('Pattern')),	0, 1, 3, 4, 0, 0, 4, y_pad)
 		table.attach(what, 1, 2, 3, 4, gtk.EXPAND|gtk.FILL, 0, x_pad, y_pad)
 
 		where = EntryThing('files')
+		what.entry.connect('activate', lambda p: where.grab_focus())
+		where.entry.set_activates_default(True)
 		table.attach(gtk.Label(_('Files')),	0, 1, 4, 5, 0, 0, 4, y_pad)
 		table.attach(where, 1, 2, 4, 5, gtk.EXPAND|gtk.FILL, 0, x_pad, y_pad)
 		
@@ -246,25 +273,37 @@ class FindWindow(rox.Window):
 		self.recurse_dirs.set_active(bool(OPT_RECURSE_DIRS.int_value))
 		hbox2.pack_start(self.recurse_dirs,False, False, 5)
 
+		prefs_btn = gtk.Button(stock = gtk.STOCK_PREFERENCES)
+		hbox2.pack_start(prefs_btn,False, False, 5)
+		prefs_btn.connect('clicked', self.edit_options)
+
 		swin = gtk.ScrolledWindow()
 		swin.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 		swin.set_shadow_type(gtk.SHADOW_IN)
 
-		self.store = gtk.ListStore(str, int, str)
+		self.store = gtk.TreeStore(str, int, str)
 		view = gtk.TreeView(self.store)
 		self.view = view
 		swin.add(view)
-		view.set_rules_hint(True)
-
+		view.set_rules_hint(False)
+		
+#		def func(model, iter, data):
+#			if len(model.get_path(iter)) < 2:
+#				return True
+#			else:
+#				return False
+#		view.set_row_separator_func(func, None)
+		
 		cell = gtk.CellRendererText()
 		try: #for pre gtk 2.6.0 support
 			cell.set_property('ellipsize_set', True)
 			cell.set_property('ellipsize', pango.ELLIPSIZE_START)
 		except: pass
-		column = gtk.TreeViewColumn(_('Filename'), cell, text = 0)
-		view.append_column(column)
-		column.set_resizable(True)
-		column.set_reorderable(True)
+		self.filename_column = gtk.TreeViewColumn(_('Filename'), cell, text = 0)
+		view.append_column(self.filename_column)
+		self.filename_column.set_resizable(True)
+		self.filename_column.set_reorderable(True)
+		self.filename_column.set_min_width(130)
 
 		cell = gtk.CellRendererText()
 		column = gtk.TreeViewColumn(_('Line'), cell, text = 1)
@@ -282,10 +321,8 @@ class FindWindow(rox.Window):
 		self.selection = view.get_selection()
 		self.selection.connect('changed', self.set_selection)
 
-		vbox = gtk.VBox()
+		vbox = self.vbox
 		vbox.set_spacing(5)
-		self.add(vbox)
-		vbox.pack_start(toolbar, False, False)
 		vbox.pack_start(table, False, False)
 		vbox.pack_start(hbox1, False, False)
 		vbox.pack_start(hbox2, False, False)
@@ -296,84 +333,102 @@ class FindWindow(rox.Window):
 		where.connect('changed', self.entry_changed)
 		path.connect('changed', self.entry_changed)
 		
-		self.connect('key-press-event', self.key_press)
-
 		self.path_entry = path
 		self.what_entry = what
 		self.where_entry = where
 		
-		if in_path:
-			path.set_text(in_path)
+		if in_path: path.set_text(in_path)
+		if in_text: what.set_text(in_text)
+		if in_files: where.set_text(in_files)
 			
-		self.connect('delete_event', self.delete_event)
+		self.set_sensitives()
 
 
 	def start_find(self, *args):
 		'''Execute the find command after applying optional paramters'''
+		self.view.grab_focus()	# Take focus from Find button!
 		self.cancel = False
-		self.running = True
-		self.set_sensitives()
 		
-		self.path_entry.append_text(self.path)
-		self.what_entry.append_text(self.what)
-		self.where_entry.append_text(self.where)
+		self.path_entry.add_text(self.path)
+		self.what_entry.add_text(self.what)
+		self.where_entry.add_text(self.where)
+		
+		self.tree_node = self.store.append(None)
+		self.store.set(self.tree_node, 
+						0, os.path.join(self.path, self.where),
+						2, self.what)
+		self.view.set_cursor(self.store.get_path(self.tree_node))
+		
+		path = os.path.expanduser(self.path)
 				
 		cmd = OPT_FIND_CMD.value
 		#long options (deprecated)
-		cmd = string.replace(cmd, '$Path', self.path)
+		cmd = string.replace(cmd, '$Path', path)
 		cmd = string.replace(cmd, '$Files', self.where)
 		cmd = string.replace(cmd, '$Text', self.what)
 		#short options
-		cmd = string.replace(cmd, '$P', self.path)
+		cmd = string.replace(cmd, '$P', path)
 		cmd = string.replace(cmd, '$F', self.where)
 		cmd = string.replace(cmd, '$T', self.what)
 		
 		cmd = string.replace(cmd, '$C', [OPT_MATCH_CASE_OFF.value,
-					 OPT_MATCH_CASE_ON.value]
-					[self.match_case.get_active()])
+						OPT_MATCH_CASE_ON.value]
+						[self.match_case.get_active()])
 										
 		cmd = string.replace(cmd, '$W', [OPT_MATCH_WORDS_OFF.value, 
-					 OPT_MATCH_WORDS_ON.value]
-					[self.match_words.get_active()])
+						OPT_MATCH_WORDS_ON.value]
+						[self.match_words.get_active()])
 										
 		cmd = string.replace(cmd, '$B', [OPT_IGNORE_BIN_OFF.value, 
-					 OPT_IGNORE_BIN_ON.value]
-					[self.ignore_binary.get_active()])
+						OPT_IGNORE_BIN_ON.value]
+						[self.ignore_binary.get_active()])
 										
 		cmd = string.replace(cmd, '$R', [OPT_RECURSE_DIRS_OFF.value, 
-										 OPT_RECURSE_DIRS_ON.value]
-										[self.recurse_dirs.get_active()])
+						OPT_RECURSE_DIRS_ON.value]
+						[self.recurse_dirs.get_active()])
 		
-		thing = popen2.Popen4(cmd)
-		tasks.Task(self.get_status(thing))
+		self.find_process = popen2.Popen3(cmd)
+		tasks.Task(self.get_status(self.find_process))
+		self.set_sensitives()
 		
 		
 	def cancel_find(self, *args):
 		self.cancel = True
-		self.running = False
-		self.set_sensitives()
-		
-		
+		os.kill(self.find_process.pid, signal.SIGKILL)
+
+				
 	def clear(self, *args):
 		self.store.clear()
 		self.selected = False
 		self.set_sensitives()
 
 
+	def close(self, *args):
+		if self.find_process is not None:
+			self.cancel_find()
+		self.path_entry.write()
+		self.what_entry.write()
+		self.where_entry.write()
+		self.destroy()
+
+
 	def get_status(self, thing):
 		'''Parse the ouput of the find command and fill the listbox.'''
 		outfile = thing.fromchild
+		results = None
 		while True:
 			blocker = tasks.InputBlocker(outfile)
 			yield blocker
 			if self.cancel:
-				os.kill(thing.pid, signal.SIGKILL)
 				self.cancel = False
+				self.find_process = None
 				return
 			line = outfile.readline()
 			if line:
+				results = True
 				self.set_sensitives()
-				iter = self.store.append()
+				iter = self.store.append(self.tree_node)
+				self.view.expand_row(self.store.get_path(self.tree_node), False)
 				try:
 					(filename, lineno, text) = string.split(line, ':', 2)
 					self.store.set(iter, 0, filename, 1, int(lineno), 2, text[:-1])
@@ -381,13 +436,14 @@ class FindWindow(rox.Window):
 					self.store.set(iter, 2, line[:-1])
 			else:
 				code = thing.wait()
+				self.find_process = None
 				if code:
+					results = False
 					rox.info(_('There was a problem with this search'))
 				break
-				
-		self.running = False
+
 		self.set_sensitives()
-		if not len(self.store):
+		if results is None:
 			rox.info(_('Your search returned no results'))
 		
 
@@ -399,14 +455,16 @@ class FindWindow(rox.Window):
 		
 				
 	def set_sensitives(self):
-		if len(self.what) and len(self.where) and len(self.path) and not self.running:
+		if self.find_process or (len(self.what) and len(self.where) and len(self.path)):
 			self.find_btn.set_sensitive(True)
 		else:
 			self.find_btn.set_sensitive(False)
-			
-		self.clear_btn.set_sensitive(bool(len(self.store)))
-		self.cancel_btn.set_sensitive(self.running)
-		self.show_btn.set_sensitive(self.selected)
+
+		self.set_response_sensitive(RESPONSE_CLEAR, bool(len(self.store)))
+
+		self.updating_button_state = True
+		self.find_btn.set_active(self.find_process is not None)
+		self.updating_button_state = False
 					
 
 	def browser(self, button, path_widget):
@@ -429,15 +487,7 @@ class FindWindow(rox.Window):
 		self.set_sensitives()
 		
 
-	def key_press(self, text, kev):
-		if kev.keyval == gtk.keysyms.Return or kev.keyval == gtk.keysyms.KP_Enter:
-			if len(self.what) and len(self.where) and len(self.path) and not self.running:
-				self.start_find()
-				return 1
-		return 0
-		
-
-	def activate(self, *args):
+	def activate(self, view, path, column):
 		'''Launch Editor for selected file/text'''
 		
 		def get_type_handler(dir, mime_type):
@@ -453,10 +503,25 @@ class FindWindow(rox.Window):
 				else:
 					return None
 			
-		model, iter = self.view.get_selection().get_selected()
-		if iter:
-			filename = model.get_value(iter, 0)
-			line = model.get_value(iter, 1)
+		if not path: return True
+		
+		# Expand/Collapse search section rows
+		if len(path) < 2:
+			if self.view.row_expanded(path):
+				self.view.collapse_row(path)
+			else:
+				self.view.expand_row(path, False)
+			return True
+
+		model = view.get_model()
+		filename = model[path][0]
+
+		event = gtk.get_current_event()
+
+		if column is self.filename_column and event and event.type != gtk.gdk.KEY_PRESS:
+			filer.show_file(filename)
+		else:
+			line = model[path][1]
 			
 			if len(OPT_EDIT_CMD.value):
 				cmd = OPT_EDIT_CMD.value
@@ -473,6 +538,7 @@ class FindWindow(rox.Window):
 					popen2.Popen4('%s "%s"' % (handler, filename))
 				else:
 					rox.info(_('There is no run action defined for text files!'))
+		return True
 
 
 	def button_press(self, text, event):
@@ -481,14 +547,6 @@ class FindWindow(rox.Window):
 			return 0
 		self.menu.popup(self, event)
 		return 1
-
-
-	def show_dir(self, *args):
-		''' Pops up a filer window. '''
-		model, iter = self.view.get_selection().get_selected()
-		if iter:
-			filename = model.get_value(iter, 0)
-			filer.show_file(filename)
 
 
 	def edit_options(self, *args):
@@ -500,16 +558,3 @@ class FindWindow(rox.Window):
 		'''Get changed Options'''
 		pass
 
-
-	def delete_event(self, ev, e1):
-		'''Bye-bye'''
-		self.close()
-
-
-	def close(self, *args):
-		'''We're outta here!'''
-		self.path_entry.write()
-		self.what_entry.write()
-		self.where_entry.write()
-		self.destroy()
-		

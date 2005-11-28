@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"PO-Revision-Date: Sun May 22 14:47:19 2005\n"
+"PO-Revision-Date: Sun Nov 27 20:22:48 2005\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
@@ -14,75 +14,127 @@ msgstr ""
 "Generated-By: pygettext.py 1.1\n"
 
 
-#: AppRun:58
-msgid "Files"
+#: tips:5
+msgid "Match case ($C)"
 msgstr ""
 
-#: AppRun:39 tips:1
-msgid "Settings"
+#: AppRun:16
+msgid "display options dialog"
 msgstr ""
 
-#: AppRun:54
+#: AppRun:22
+msgid "specify search text"
+msgstr ""
+
+#: filefind.py:247
 msgid "Pattern"
 msgstr ""
 
-#: AppRun:37
-msgid "Clear"
+#: tips:17
+msgid "Edit command"
 msgstr ""
 
-#: tips:3
-msgid "Your preferred find command settings. (use $Path, $Files and $Text to represent the search path, the files to search and the text to search for.)"
-msgstr ""
-
-#: AppRun:35
-msgid "Show file"
-msgstr ""
-
-#: AppRun:76
+#: filefind.py:302
 msgid "Filename"
 msgstr ""
 
-#: AppRun:140
-msgid "No matches"
+#: AppRun:19
+msgid "specify search path"
 msgstr ""
 
-#: tips:4
-msgid "Editor"
+#: tips:14
+msgid "Ignore binary files ($B)"
 msgstr ""
 
-#: AppRun:148
-msgid "Select folder"
+#: filefind.py:253
+msgid "Files"
 msgstr ""
 
-#: AppRun:49
-msgid "Path"
+#: tips:18
+msgid "Your preferred text editor"
 msgstr ""
 
-#: AppRun:38
-msgid "Cancel"
+#: tips:8
+msgid "Match whole words ($W)"
 msgstr ""
 
-#: AppRun:34
-msgid "Close"
+#: tips:11
+msgid "Recurse subdirectories ($R)"
 msgstr ""
 
-#: AppRun:82
-msgid "Line"
+#: tips:19
+msgid "(use $File and $Line to represent filename and line number)"
 msgstr ""
 
-#: AppRun:196
+#: filefind.py:266
+msgid "Ignore binary files"
+msgstr ""
+
+#: filefind.py:272
+msgid "Search subdirectories"
+msgstr ""
+
+#: filefind.py:540
 msgid "There is no run action defined for text files!"
 msgstr ""
 
-#: AppRun:36 tips:2
-msgid "Find"
+#: AppRun:25
+msgid "specify files to search in"
 msgstr ""
 
-#: tips:5 tips:6 tips:7
-msgid "Your preferred text editor (use $File and $Line to represent filename and line number)"
+#: filefind.py:238
+msgid "Path"
 msgstr ""
 
-#: AppRun:88
+#: filefind.py:309
+msgid "Line"
+msgstr ""
+
+#: tips:3
+msgid "Your preferred find command settings."
+msgstr ""
+
+#: tips:6 tips:9 tips:12 tips:15
+msgid "On"
+msgstr ""
+
+#: tips:7 tips:10 tips:13 tips:16
+msgid "Off"
+msgstr ""
+
+#: tips:1
+msgid "Settings"
+msgstr ""
+
+#: filefind.py:262
+msgid "Match whole words"
+msgstr ""
+
+#: filefind.py:258
+msgid "Match case"
+msgstr ""
+
+#: tips:2
+msgid "Find command"
+msgstr ""
+
+#: filefind.py:442
+msgid "There was a problem with this search"
+msgstr ""
+
+#: tips:4
+msgid "Use $P, $F and $T to represent the search Path, the Files to examine and the search Text.  Additional options are defined below."
+msgstr ""
+
+#: filefind.py:447
+msgid "Your search returned no results"
+msgstr ""
+
+#: filefind.py:315
 msgid "Text"
+msgstr ""
+
+#: filefind.py:471
+msgid "Select folder"
 msgstr ""
 
