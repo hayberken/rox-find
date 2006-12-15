@@ -2,6 +2,10 @@ Find (in Files) -- a ROX Utility
 
 Changelog:
 -----------------
+Version 008 (???)
+	* Use ROX-Lib's function to get handler to open files
+	* ???
+
 Version 007 (27-Nov-2005)
 	* Bugfix for Version 006 - Cancel didn't stop the find until some output was
 	generated. 

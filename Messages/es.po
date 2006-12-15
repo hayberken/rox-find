@@ -1,0 +1,142 @@
+# translation of PACKAGE.
+# Copyright (C) 2006 ORGANIZATION
+# <>, 2006.
+# <>, 2006.
+# 
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: (null)\n"
+"PO-Revision-Date: 2006-03-24 11:24+0100\n"
+"Last-Translator: Juan Carlos Jimenez Garcia <jigarNOSPAM@alumni.uv.es>\n"
+"Language-Team: Spanish/Spain <es@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Transfer-Encoding: 8bit"
+
+#: tips:5
+msgid "Match case ($C)"
+msgstr "Coincidir Mayús/minús ($C)"
+
+#: AppRun:16
+msgid "display options dialog"
+msgstr "visualizar diálogo de opciones"
+
+#: AppRun:22
+msgid "specify search text"
+msgstr "especificar texto de búsqueda"
+
+#: filefind.py:247
+msgid "Pattern"
+msgstr "Conteniendo"
+
+#: tips:17
+msgid "Edit command"
+msgstr "Editar acción"
+
+#: filefind.py:302
+msgid "Filename"
+msgstr "Nombre de archivo"
+
+#: AppRun:19
+msgid "specify search path"
+msgstr "especificar ruta de búsqueda"
+
+#: tips:14
+msgid "Ignore binary files ($B)"
+msgstr "Ignorar archivos binarios ($B)"
+
+#: filefind.py:253
+msgid "Files"
+msgstr "Archivos"
+
+#: tips:18
+msgid "Your preferred text editor"
+msgstr "Su editor de texto preferido"
+
+#: tips:8
+msgid "Match whole words ($W)"
+msgstr "Coincidir palabras completas ($W)"
+
+#: tips:11
+msgid "Recurse subdirectories ($R)"
+msgstr "Subdirectorios recursivos ($R)"
+
+#: tips:19
+msgid "(use $File and $Line to represent filename and line number)"
+msgstr "(usar $File y $Line para representar al nombre de archivo y número de línea)"
+
+#: filefind.py:266
+msgid "Ignore binary files"
+msgstr "Ignorar archivos binarios"
+
+#: filefind.py:272
+msgid "Search subdirectories"
+msgstr "Buscar en subdirectorios"
+
+#: filefind.py:540
+msgid "There is no run action defined for text files!"
+msgstr "¡No se ha definido la acción a ejecutar para archivos de texto!"
+
+#: AppRun:25
+msgid "specify files to search in"
+msgstr "especificar archivos para buscar dentro de ellos"
+
+#: filefind.py:238
+msgid "Path"
+msgstr "Ruta"
+
+#: filefind.py:309
+msgid "Line"
+msgstr "Línea"
+
+#: tips:3
+msgid "Your preferred find command settings."
+msgstr "Sus preferencias para la acción de búsqueda"
+
+#: tips:6 tips:9 tips:12 tips:15
+msgid "On"
+msgstr "On"
+
+#: tips:7 tips:10 tips:13 tips:16
+msgid "Off"
+msgstr "Off"
+
+#: tips:1
+msgid "Settings"
+msgstr "Preferencias"
+
+#: filefind.py:262
+msgid "Match whole words"
+msgstr "Coincidir palabras completas"
+
+#: filefind.py:258
+msgid "Match case"
+msgstr "Coincidir Mayús/minús"
+
+#: tips:2
+msgid "Find command"
+msgstr "Acción de búsqueda"
+
+#: filefind.py:442
+msgid "There was a problem with this search"
+msgstr "Ocurrió un problema con esta búsqueda"
+
+#: tips:4
+msgid "Use $P, $F and $T to represent the search Path, the Files to examine and the search Text.  Additional options are defined below."
+msgstr "Usar $P, $F Y $T para representar la Ruta de búsqueda, los Archivos a examinar y el Texto de búsqueda,  Las opciones adicionales están definidas más abajo."
+
+#: filefind.py:447
+msgid "Your search returned no results"
+msgstr "Su búsqueda no devolvió resultados"
+
+#: filefind.py:315
+msgid "Text"
+msgstr "Texto"
+
+#: filefind.py:471
+msgid "Select folder"
+msgstr "Seleccionar carpeta"
+

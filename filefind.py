@@ -490,19 +490,19 @@ class FindWindow(rox.Dialog):
 	def activate(self, view, path, column):
 		'''Launch Editor for selected file/text'''
 		
-		def get_type_handler(dir, mime_type):
-			"""Lookup the ROX-defined run action for a given mime type."""
-			path = basedir.load_first_config('MIME-types')
-			handler = os.path.join(path, '%s_%s' % (mime_type.media, mime_type.subtype))
-			if os.path.exists(handler):
-				return handler
-			else: #fall back to the base handler if no subtype handler exists
-				handler = os.path.join(path, '%s' % (mime_type.media,), '')
-				if os.path.exists(handler):
-					return handler
-				else:
-					return None
-			
+		def get_type_handler(mime_type, handler_type = 'MIME-types'):
+			"""Lookup the ROX-defined run action for a given mime type.
+			mime_type is an object returned by lookup().
+			handler_type is a config directory leaf (e.g.'MIME-types')."""
+		
+			handler = basedir.load_first_config('rox.sourceforge.net', handler_type,
+						 mime_type.media + '_' + mime_type.subtype)
+			if not handler:
+				# Fall back to the base handler if no subtype handler exists
+				handler = basedir.load_first_config('rox.sourceforge.net', handler_type,
+							 mime_type.media)
+			return handler
+					
 		if not path: return True
 		
 		# Expand/Collapse search section rows
@@ -530,7 +530,7 @@ class FindWindow(rox.Dialog):
 				popen2.Popen4(cmd)
 			else: #use the ROX defined text handler
 				mime_type = rox.mime.lookup('text/plain')
-				handler = get_type_handler('MIME-types', mime_type)
+				handler = get_type_handler(mime_type)
 				handler_appdir = os.path.join(handler, 'AppRun')
 				if os.path.isdir(handler) and os.path.isfile(handler_appdir):
 					handler = handler_appdir
