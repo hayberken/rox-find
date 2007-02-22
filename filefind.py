@@ -424,6 +424,7 @@ class FindWindow(rox.Dialog):
 				self.find_process = None
 				return
 			line = outfile.readline()
+			line = line.rstrip()
 			if line:
 				results = True
 				self.set_sensitives()
